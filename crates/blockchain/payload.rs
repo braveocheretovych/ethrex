@@ -124,6 +124,17 @@ impl BuildPayloadArgs {
         if let Some(beacon_root) = self.beacon_root {
             hasher.update(beacon_root);
         }
+        // EIP-7805 (FOCIL): the inclusion list must be part of the payload
+        // identifier so that two FCU V5 calls for the same slot with
+        // different ILs yield distinct payload IDs (otherwise the second
+        // call would retrieve the first call's cached payload, built with
+        // the wrong IL — felix314159/hive#3
+        // testNewPayloadInclusionListSatisfied catches this).
+        if let Some(il) = &self.inclusion_list_transactions {
+            for tx in il {
+                hasher.update(tx.encode_canonical_to_vec());
+            }
+        }
         let res = &mut hasher.finalize()[..8];
         res[0] = self.version;
         Ok(u64::from_be_bytes(res.try_into().map_err(|_| {
