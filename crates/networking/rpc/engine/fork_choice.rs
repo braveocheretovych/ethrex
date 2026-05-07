@@ -693,8 +693,11 @@ async fn build_payload_v5(
     // Per the FOCIL spec (and the hive engine-focil "garbage bytes" test),
     // malformed IL byte strings MUST be tolerated rather than failing the
     // whole forkchoiceUpdated call. Skip anything that doesn't RLP-decode
-    // and build with whatever real transactions remain.
-    crate::engine::payload::validate_il_byte_size(&attributes.inclusion_list_transactions)?;
+    // and build with whatever real transactions remain. No upper size cap
+    // on this receive path either — felix314159/hive#3
+    // testForkchoiceUpdatedAcceptsLargeIL explicitly exercises a 10 KiB IL
+    // and expects FCU V5 to succeed; the 8 KiB cap applies only to what
+    // engine_getInclusionListV1 BUILDS.
     let il_count = attributes.inclusion_list_transactions.len();
     let mut decoded_il: Vec<Transaction> = Vec::with_capacity(il_count);
     for (i, raw) in attributes.inclusion_list_transactions.iter().enumerate() {
